@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chalkboard — Timetable Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#0f1c33;
+    --navy-900:#132a4a;
+    --navy-800:#1b3a63;
+    --navy-700:#254a7a;
+    --navy-600:#33608f;
+    --gold-600:#a97a34;
+    --gold-500:#c79554;
+    --gold-300:#e6c78e;
+    --gold-100:#f7ecd8;
+    --paper:#f6f5f1;
+    --paper-dim:#efeee8;
+    --card:#ffffff;
+    --ink-900:#181c22;
+    --ink-700:#3c434e;
+    --ink-500:#6b7280;
+    --ink-300:#9aa1ab;
+    --line:#e1ddd3;
+    --line-strong:#cfc9ba;
+    --break-bg:#dcecd9;
+    --break-ink:#2f5a34;
+    --lunch-bg:#f6e6b8;
+    --lunch-ink:#7a5a12;
+    --sports-bg:#d7e6f5;
+    --sports-ink:#2a4a72;
+    --danger:#a4392e;
+    --radius-sm:6px;
+    --radius-md:10px;
+    --radius-lg:16px;
+    --shadow-card:0 1px 2px rgba(15,28,51,0.06), 0 6px 20px -10px rgba(15,28,51,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0e141f;
+      --paper-dim:#0b1119;
+      --card:#141c2b;
+      --ink-900:#eef1f6;
+      --ink-700:#c3cbd8;
+      --ink-500:#8b95a7;
+      --ink-300:#5c6579;
+      --line:#26314a;
+      --line-strong:#324066;
+      --navy-900:#0e1c33;
+      --break-bg:#1c3324;
+      --break-ink:#8fd6a0;
+      --lunch-bg:#3a3116;
+      --lunch-ink:#e6c877;
+      --sports-bg:#1c2c42;
+      --sports-ink:#9ec3ef;
+      --shadow-card:0 1px 2px rgba(0,0,0,0.3), 0 10px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0e141f;
+    --paper-dim:#0b1119;
+    --card:#141c2b;
+    --ink-900:#eef1f6;
+    --ink-700:#c3cbd8;
+    --ink-500:#8b95a7;
+    --ink-300:#5c6579;
+    --line:#26314a;
+    --line-strong:#324066;
+    --navy-900:#0e1c33;
+    --break-bg:#1c3324;
+    --break-ink:#8fd6a0;
+    --lunch-bg:#3a3116;
+    --lunch-ink:#e6c877;
+    --sports-bg:#1c2c42;
+    --sports-ink:#9ec3ef;
+    --shadow-card:0 1px 2px rgba(0,0,0,0.3), 0 10px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink-900);
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.serif{font-family:'Fraunces',Georgia,'Times New Roman',serif;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  a{color:inherit;}
+  button{font-family:inherit;}
+
+  /* ---------- Top bar ---------- */
+  .topbar{
+    background:var(--navy-900);
+    border-bottom:3px solid var(--gold-500);
+    position:sticky; top:0; z-index:40;
+  }
+  .topbar-inner{
+    max-width:1240px; margin:0 auto; padding:0 20px;
+    display:flex; align-items:center; gap:28px; height:64px;
+  }
+  .brand{display:flex; align-items:center; gap:11px; flex-shrink:0;}
+  .brand-mark{
+    width:34px;height:34px;border-radius:7px;
+    background:linear-gradient(155deg,var(--gold-500),var(--gold-600));
+    display:flex;align-items:center;justify-content:center;
+    color:var(--navy-950); font-weight:700; font-family:'Fraunces',serif; font-size:17px;
+    flex-shrink:0;
+  }
+  .brand-text{display:flex; flex-direction:column; line-height:1.1;}
+  .brand-text strong{color:#fbf8f2; font-family:'Fraunces',serif; font-size:17px; font-weight:600; letter-spacing:0.2px;}
+  .brand-text span{color:#a9b8ce; font-size:11px; letter-spacing:0.3px;}
+
+  .navtabs{display:flex; gap:2px; overflow-x:auto; flex:1;}
+  .navtab{
+    background:none;border:none;cursor:pointer;
+    color:#b7c3d6; font-size:14.5px; font-weight:500;
+    padding:0 16px; height:64px; white-space:nowrap;
+    border-bottom:3px solid transparent; margin-bottom:-3px;
+    transition:color .15s ease;
+  }
+  .navtab:hover{color:#fff;}
+  .navtab.active{color:#fff; border-bottom-color:var(--gold-500); font-weight:600;}
+
+  .topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .theme-toggle{
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+    color:#dbe3ee; width:34px;height:34px;border-radius:8px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center; font-size:15px;
+  }
+  .theme-toggle:hover{background:rgba(255,255,255,0.12);}
+  .sync-badge{
+    display:flex; align-items:center; gap:6px; font-size:11.5px; color:#a9b8ce;
+    background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
+    padding:0 11px; height:34px; border-radius:8px; white-space:nowrap;
+  }
+  .sync-dot{width:6px;height:6px;border-radius:50%;background:#9aa1ab; flex-shrink:0;}
+  .sync-dot.synced{background:#5fbf6f;}
+  .sync-dot.syncing{background:var(--gold-500); animation:syncPulse 1.1s ease-in-out infinite;}
+  .sync-dot.offline{background:#c0836b;}
+  .sync-dot.error{background:var(--danger);}
+  @keyframes syncPulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+
+  /* ---------- Layout ---------- */
+  .page{max-width:1240px; margin:0 auto; padding:32px 20px 80px;}
+  .page-head{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:26px; flex-wrap:wrap;}
+  .page-head h1{font-size:28px; font-weight:600; margin:0 0 6px; color:var(--ink-900);}
+  .page-head p{margin:0; color:var(--ink-500); font-size:14.5px; max-width:56ch;}
+  .eyebrow{font-size:12.5px; color:var(--gold-600); font-weight:600; margin:0 0 4px;}
+
+  .btn{
+    border:none; border-radius:8px; cursor:pointer; font-weight:600; font-size:14px;
+    padding:10px 18px; display:inline-flex; align-items:center; gap:8px;
+    transition:transform .1s ease, box-shadow .15s ease; white-space:nowrap;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--navy-800); color:#fff;}
+  .btn-primary:hover{background:var(--navy-700);}
+  .btn-gold{background:var(--gold-500); color:var(--navy-950);}
+  .btn-gold:hover{background:var(--gold-300);}
+  .btn-ghost{background:transparent; color:var(--ink-700); border:1px solid var(--line-strong);}
+  .btn-ghost:hover{background:var(--paper-dim);}
+  .btn-danger-ghost{background:transparent; color:var(--danger); border:1px solid #d9beb8;}
+  .btn-danger-ghost:hover{background:rgba(164,57,46,0.08);}
+  .btn-sm{padding:6px 12px; font-size:12.5px;}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+
+  /* ---------- Cards ---------- */
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-card);
+  }
+  .card-pad{padding:22px;}
+  .card-head{padding:18px 22px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; gap:12px;}
+  .card-head h3{margin:0; font-size:16px; font-weight:600;}
+  .card-head p{margin:2px 0 0; font-size:12.5px; color:var(--ink-500);}
+
+  .stat-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px;}
+  @media (max-width:900px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
+  .stat-card{
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius-lg);
+    padding:18px 20px; box-shadow:var(--shadow-card);
+  }
+  .stat-num{font-family:'Fraunces',serif; font-size:32px; font-weight:600; line-height:1; color:var(--navy-800);}
+  :root[data-theme="dark"] .stat-num, @media (prefers-color-scheme:dark){.stat-num{color:var(--gold-300);}}
+  .stat-label{margin-top:6px; font-size:12.5px; color:var(--ink-500); font-weight:500;}
+
+  .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:20px;}
+  @media (max-width:920px){ .two-col{grid-template-columns:1fr;} }
+
+  .level-pill-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px;}
+  .level-pill{
+    border:1px solid var(--line-strong); background:var(--card); color:var(--ink-700);
+    padding:8px 16px; border-radius:999px; font-size:13.5px; font-weight:600; cursor:pointer;
+    display:flex; align-items:center; gap:7px;
+  }
+  .level-pill .dot{width:6px;height:6px;border-radius:50%;background:var(--line-strong);}
+  .level-pill.active{background:var(--navy-800); border-color:var(--navy-800); color:#fff;}
+  .level-pill.active .dot{background:var(--gold-500);}
+  .level-pill.has-data:not(.active) .dot{background:var(--gold-600);}
+
+  /* ---------- Forms ---------- */
+  .field{margin-bottom:16px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; color:var(--ink-700); margin-bottom:6px;}
+  .field .hint{font-size:11.5px; color:var(--ink-300); margin-top:4px;}
+  .field input[type=text], .field input[type=number], .field select{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid var(--line-strong);
+    background:var(--paper); color:var(--ink-900); font-size:14px; font-family:inherit;
+  }
+  .field input:focus, .field select:focus{outline:2px solid var(--navy-700); outline-offset:1px; border-color:var(--navy-700);}
+  .form-row{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media (max-width:600px){ .form-row{grid-template-columns:1fr;} }
+
+  /* ---------- Table ---------- */
+  .table-wrap{overflow-x:auto;}
+  table.data-table{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.data-table th{
+    text-align:left; padding:10px 14px; font-size:11.5px; letter-spacing:0.2px;
+    color:var(--ink-500); border-bottom:1px solid var(--line); font-weight:600;
+  }
+  table.data-table td{padding:11px 14px; border-bottom:1px solid var(--line); color:var(--ink-900);}
+  table.data-table tr:last-child td{border-bottom:none;}
+  table.data-table tr:hover td{background:var(--paper-dim);}
+  .subj-swatch{display:inline-block; width:9px;height:9px;border-radius:2px; margin-right:8px; vertical-align:middle;}
+  .row-actions{display:flex; gap:6px;}
+  .icon-btn{
+    background:transparent; border:1px solid var(--line-strong); border-radius:6px; cursor:pointer;
+    width:28px;height:28px; display:inline-flex; align-items:center; justify-content:center; color:var(--ink-500);
+  }
+  .icon-btn:hover{color:var(--ink-900); background:var(--paper-dim);}
+
+  .empty{
+    text-align:center; padding:48px 20px; color:var(--ink-500);
+  }
+  .empty .icon{font-size:30px; margin-bottom:10px;}
+  .empty h4{margin:0 0 6px; color:var(--ink-900); font-size:16px; font-family:'Fraunces',serif; font-weight:600;}
+  .empty p{margin:0 0 16px; font-size:13.5px; max-width:40ch; margin-left:auto; margin-right:auto;}
+
+  .badge{display:inline-flex; align-items:center; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:600;}
+  .badge-gold{background:var(--gold-100); color:var(--gold-600);}
+  :root[data-theme="dark"] .badge-gold, @media (prefers-color-scheme:dark){.badge-gold{background:rgba(199,149,84,0.16); color:var(--gold-300);}}
+
+  /* ---------- Capacity meter ---------- */
+  .meter-track{height:9px; border-radius:999px; background:var(--paper-dim); overflow:hidden; border:1px solid var(--line);}
+  .meter-fill{height:100%; border-radius:999px; background:linear-gradient(90deg,var(--navy-700),var(--navy-800)); transition:width .3s ease;}
+  .meter-fill.over{background:linear-gradient(90deg,#b5502f,var(--danger));}
+
+  /* ---------- Timetable grid ---------- */
+  .tt-wrap{overflow-x:auto; border-radius:var(--radius-lg); border:1px solid var(--line);}
+  table.tt-grid{border-collapse:collapse; width:100%; min-width:760px; background:var(--card);}
+  table.tt-grid th{
+    background:var(--navy-900); color:#fff; font-family:'Fraunces',serif; font-weight:600;
+    font-size:14.5px; padding:12px 10px; text-align:center; border-bottom:2px solid var(--gold-500);
+  }
+  table.tt-grid th.time-col{background:var(--navy-950); font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:500; color:#a9b8ce;}
+  table.tt-grid td{
+    border:1px solid var(--line); padding:0; vertical-align:top; position:relative; height:52px;
+  }
+  td.time-cell{
+    background:var(--paper-dim); color:var(--ink-500); font-family:'JetBrains Mono',monospace;
+    font-size:10.5px; text-align:center; vertical-align:middle; white-space:nowrap; padding:4px 8px;
+    width:78px;
+  }
+  .cell-inner{height:100%; display:flex; flex-direction:column; justify-content:center; padding:6px 9px;}
+  .cell-lesson{background:var(--card);}
+  .cell-lesson .subj-name{font-size:12.5px; font-weight:700; color:var(--ink-900); line-height:1.25;}
+  .cell-lesson .teacher-name{font-size:10.5px; color:var(--ink-500); margin-top:2px;}
+  .cell-free{background:var(--paper-dim);}
+  .cell-free .free-label{font-size:11px; color:var(--ink-300); font-style:italic; text-align:center;}
+  .cell-break{background:var(--break-bg); color:var(--break-ink);}
+  .cell-lunch{background:var(--lunch-bg); color:var(--lunch-ink);}
+  .cell-sports{background:var(--sports-bg); color:var(--sports-ink);}
+  .cell-block-label{
+    font-size:11.5px; font-weight:700; letter-spacing:0.3px; text-align:center; height:100%;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .subj-left-bar{position:absolute; left:0; top:0; bottom:0; width:3px;}
+
+  .legend{display:flex; flex-wrap:wrap; gap:16px; margin-top:14px; font-size:12.5px; color:var(--ink-700);}
+  .legend-item{display:flex; align-items:center; gap:7px;}
+  .legend-swatch{width:13px;height:13px;border-radius:3px;}
+
+  .warn-box{
+    background:var(--lunch-bg); border:1px solid var(--gold-500); color:var(--lunch-ink);
+    border-radius:10px; padding:12px 16px; font-size:13px; margin-bottom:18px; display:flex; gap:10px; align-items:flex-start;
+  }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(15,20,30,0.55); display:flex; align-items:center; justify-content:center;
+    z-index:100; padding:20px;
+  }
+  .modal{
+    background:var(--card); border-radius:var(--radius-lg); width:100%; max-width:420px; box-shadow:var(--shadow-card);
+    border:1px solid var(--line);
+  }
+  .modal-head{padding:18px 22px; border-bottom:1px solid var(--line);}
+  .modal-head h3{margin:0; font-size:16px;}
+  .modal-body{padding:20px 22px;}
+  .modal-foot{padding:16px 22px; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:10px;}
+
+  .toast-wrap{position:fixed; bottom:22px; right:22px; z-index:200; display:flex; flex-direction:column; gap:10px;}
+  .toast{
+    background:var(--navy-900); color:#fff; padding:12px 18px; border-radius:9px; font-size:13.5px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.25); border-left:3px solid var(--gold-500); max-width:320px;
+    animation:toastin .2s ease;
+  }
+  @keyframes toastin{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  ::-webkit-scrollbar{height:10px; width:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--line-strong); border-radius:6px;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+  :focus-visible{outline:2px solid var(--navy-700); outline-offset:2px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div class="brand-text">
+        <strong>Chalkboard</strong>
+        <span>Timetable Generator</span>
+      </div>
+    </div>
+    <nav class="navtabs" id="navtabs"></nav>
+    <div class="topbar-right">
+      <span class="sync-badge" id="syncBadge" title="Cloud record status">
+        <span class="sync-dot" id="syncDot"></span><span id="syncLabel">Loading…</span>
+      </span>
+      <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle color theme">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page"></div>
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* =========================================================
+   CONSTANTS
+========================================================= */
+var CLASS_LEVELS = ["Form 1","Form 2","Form 3","Form 4","Form 5","Form 6"];
+var DAYS = ["Monday","Tuesday","Wednesday","Thursday","Friday"];
+var SLOT_COUNT = 17;
+
+var DAY_DEFS = {
+  "Monday":    { lesson:[0,1,2,3,4,6,7,8,9,10,13,14,15,16], "break":[5], lunch:[11,12], sports:[] },
+  "Tuesday":   { lesson:[0,1,2,3,4,6,7,8,9,10,13,14,15,16], "break":[5], lunch:[11,12], sports:[] },
+  "Wednesday": { lesson:[0,1,2,3,4,6,7,8,9,10], "break":[5], lunch:[], sports:[11,12,13,14,15,16] },
+  "Thursday":  { lesson:[0,1,2,3,4,6,7,8,9,10,13,14,15,16], "break":[5], lunch:[11,12], sports:[] },
+  "Friday":    { lesson:[0,1,2,3,4,6,7,8,9,10], "break":[5], lunch:[11,12], sports:[13,14,15,16] }
+};
+
+var SWATCHES = ["#254a7a","#a97a34","#6b7d3f","#8a4a63","#3f7d78","#7a5230","#4a5a8a","#9a5a3f","#3f7a5a","#6a4a8a"];
+
+function generateSlots(){
+  var slots = [];
+  var start = 7*60+30;
+  for(var i=0;i<SLOT_COUNT;i++){
+    var s = start + i*30;
+    var e = s + 30;
+    slots.push({ start: fmtMinutes(s), end: fmtMinutes(e) });
+  }
+  return slots;
+}
+function fmtMinutes(m){
+  var h = Math.floor(m/60), mm = m%60;
+  return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm;
+}
+var SLOTS = generateSlots();
+
+function dayCapacity(day){ return DAY_DEFS[day].lesson.length; }
+function totalWeeklyCapacity(){
+  var t=0; DAYS.forEach(function(d){ t+=dayCapacity(d); }); return t;
+}
+
+/* =========================================================
+   STATE + PERSISTENCE
+   Two tiers: localStorage is an instant local cache (always
+   written, works with no viewer session at all); the `db`
+   runtime capability is the durable record of teachers,
+   subjects and generated timetables, synced per class level
+   as one document per Form under collection "classes".
+========================================================= */
+var STORAGE_KEY = "chalkboard_ttg_state_v1";
+
+function defaultClassData(){
+  return { subjects: [], freePeriods: 0, timetable: null, unscheduled: null };
+}
+function defaultState(){
+  var data = {};
+  CLASS_LEVELS.forEach(function(lvl){ data[lvl] = defaultClassData(); });
+  return { activeTab:"dashboard", activeLevel:"Form 4", theme:"auto", data:data };
+}
+
+var state = loadState();
+
+function loadState(){
+  try{
+    var raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultState();
+    var parsed = JSON.parse(raw);
+    var base = defaultState();
+    CLASS_LEVELS.forEach(function(lvl){
+      if(parsed.data && parsed.data[lvl]) base.data[lvl] = parsed.data[lvl];
+    });
+    if(parsed.activeLevel && CLASS_LEVELS.indexOf(parsed.activeLevel)>=0) base.activeLevel = parsed.activeLevel;
+    if(parsed.activeTab) base.activeTab = parsed.activeTab;
+    if(parsed.theme) base.theme = parsed.theme;
+    return base;
+  }catch(e){
+    return defaultState();
+  }
+}
+function saveState(){
+  try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  catch(e){ /* storage unavailable — continue in-memory */ }
+}
+function curClass(){ return state.data[state.activeLevel]; }
+function newId(prefix){
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+}
+
+function levelSlug(level){ return level.toLowerCase().replace(/\s+/g,"-"); }
+var SLUG_TO_LEVEL = {};
+CLASS_LEVELS.forEach(function(lvl){ SLUG_TO_LEVEL[levelSlug(lvl)] = lvl; });
+
+/* ---- db capability wiring ---- */
+var dbRef = null;            // resolved db namespace, or null if unavailable
+var dbAvailable = false;
+var dbReady = false;         // true once the initial cloud fetch has settled
+var dbWriteChain = {};       // per-level promise chain so writes to one doc never overlap
+
+function setSyncStatus(status, label){
+  var dot = document.getElementById("syncDot");
+  var lbl = document.getElementById("syncLabel");
+  if(!dot || !lbl) return;
+  dot.className = "sync-dot " + status;
+  lbl.textContent = label;
+}
+
+function initCloudRecords(){
+  try{
+    if(typeof window.claude === "undefined" || !window.claude.use){
+      setSyncStatus("offline", "Saved locally");
+      dbReady = true;
+      return;
+    }
+    setSyncStatus("syncing", "Loading records…");
+    window.claude.use("db").then(function(db){
+      if(!db){
+        dbAvailable = false; dbReady = true;
+        setSyncStatus("offline", "Saved locally");
+        return;
+      }
+      dbRef = db; dbAvailable = true;
+      return db.collection("classes").get().then(function(snap){
+        snap.docs.forEach(function(docSnap){
+          var level = SLUG_TO_LEVEL[docSnap.id];
+          if(!level) return;
+          var body = docSnap.data();
+          if(!body) return;
+          state.data[level] = {
+            subjects: body.subjects || [],
+            freePeriods: body.freePeriods || 0,
+            timetable: body.timetable || null,
+            unscheduled: body.unscheduled || null
+          };
+        });
+        dbReady = true;
+        saveState();
+        setSyncStatus("synced", "Records synced");
+        render();
+      });
+    }).catch(function(err){
+      dbReady = true; dbAvailable = false;
+      setSyncStatus("error", "Sync unavailable");
+    });
+  }catch(e){
+    dbReady = true; dbAvailable = false;
+    setSyncStatus("offline", "Saved locally");
+  }
+}
+
+/** Call after any mutation to a class level's subjects, free
+ *  periods or generated timetable. Always updates the local
+ *  cache immediately; queues a cloud write when db is on. */
+function persistLevel(level){
+  saveState();
+  if(!dbAvailable || !dbRef) return;
+  var slug = levelSlug(level);
+  var payload;
+  try{ payload = JSON.parse(JSON.stringify(state.data[level])); }
+  catch(e){ return; }
+  payload.updatedAt = Date.now();
+  var docRef = dbRef.doc("classes/"+slug);
+  setSyncStatus("syncing", "Saving…");
+  dbWriteChain[level] = (dbWriteChain[level] || Promise.resolve())
+    .then(function(){ return docRef.set(payload); })
+    .then(function(){ setSyncStatus("synced", "Records synced"); })
+    .catch(function(err){ setSyncStatus("error", "Sync failed — saved locally"); });
+}
+
+/* =========================================================
+   SCHEDULING ENGINE
+========================================================= */
+function buildEmptyGrid(){
+  var grid = {};
+  DAYS.forEach(function(day){ grid[day] = new Array(SLOT_COUNT).fill(null); });
+  return grid;
+}
+
+function findRun(grid, day, size){
+  var lessonIdx = DAY_DEFS[day].lesson;
+  var runs = [], cur = [];
+  lessonIdx.forEach(function(idx){
+    if(cur.length===0 || idx === cur[cur.length-1]+1){ cur.push(idx); }
+    else { runs.push(cur); cur=[idx]; }
+  });
+  if(cur.length) runs.push(cur);
+  for(var r=0;r<runs.length;r++){
+    var run = runs[r];
+    var count=0, startIdx=-1;
+    for(var i=0;i<run.length;i++){
+      var idx = run[i];
+      if(grid[day][idx]===null){
+        if(count===0) startIdx = idx;
+        count++;
+        if(count===size){
+          var out=[];
+          for(var k=0;k<size;k++) out.push(startIdx+k);
+          return out;
+        }
+      } else { count=0; startIdx=-1; }
+    }
+  }
+  return null;
+}
+
+function generateTimetable(subjects, freePeriods){
+  var grid = buildEmptyGrid();
+  var unscheduled = [];
+
+  var blocks = [];
+  subjects.forEach(function(subj){
+    for(var i=0;i<subj.frequency;i++){
+      blocks.push({ subj:subj, size:subj.durationSlots });
+    }
+  });
+  // Larger blocks first — easier to fit into remaining gaps
+  blocks.sort(function(a,b){ return b.size - a.size; });
+
+  var subjDayCount = {};
+  var dayRot = 0;
+
+  blocks.forEach(function(block){
+    var subj = block.subj;
+    if(!subjDayCount[subj.id]) subjDayCount[subj.id] = {};
+    var ordered = DAYS.slice(dayRot).concat(DAYS.slice(0,dayRot));
+    ordered = ordered.slice().sort(function(a,b){
+      var aUsed = subjDayCount[subj.id][a] ? 1 : 0;
+      var bUsed = subjDayCount[subj.id][b] ? 1 : 0;
+      return aUsed - bUsed;
+    });
+    var placed = false;
+    for(var i=0;i<ordered.length;i++){
+      var day = ordered[i];
+      var run = findRun(grid, day, block.size);
+      if(run){
+        run.forEach(function(idx){
+          grid[day][idx] = { kind:"subject", name:subj.name, teacher:subj.teacher, id:subj.id, color:subj.color };
+        });
+        subjDayCount[subj.id][day] = (subjDayCount[subj.id][day]||0)+1;
+        dayRot = (DAYS.indexOf(day)+1) % DAYS.length;
+        placed = true;
+        break;
+      }
+    }
+    if(!placed) unscheduled.push({ subject: subj.name, size: block.size });
+  });
+
+  var freeDayCount = {}; DAYS.forEach(function(d){ freeDayCount[d]=0; });
+  var unscheduledFree = 0;
+  for(var f=0; f<freePeriods; f++){
+    var ordered2 = DAYS.slice().sort(function(a,b){ return freeDayCount[a]-freeDayCount[b]; });
+    var placedFree = false;
+    for(var j=0;j<ordered2.length;j++){
+      var day2 = ordered2[j];
+      var run2 = findRun(grid, day2, 1);
+      if(run2){
+        grid[day2][run2[0]] = { kind:"free" };
+        freeDayCount[day2]++;
+        placedFree = true;
+        break;
+      }
+    }
+    if(!placedFree) unscheduledFree++;
+  }
+  if(unscheduledFree>0) unscheduled.push({ subject:"Free periods", size:1, count:unscheduledFree, isFree:true });
+
+  return { grid: grid, unscheduled: unscheduled, generatedAt: Date.now() };
+}
+
+function usedSlots(subjects, freePeriods){
+  var used = 0;
+  subjects.forEach(function(s){ used += s.frequency * s.durationSlots; });
+  used += (freePeriods||0);
+  return used;
+}
+
+/* =========================================================
+   SAMPLE DATA
+========================================================= */
+function sampleSubjects(){
+  var list = [
+    ["Mathematics","Mr. T. Moyo",5,30],
+    ["English Language","Mrs. R. Chikwava",5,30],
+    ["Shona","Mr. F. Mutasa",3,30],
+    ["Combined Science","Mr. P. Ndlovu",4,60],
+    ["Geography","Mrs. S. Gumbo",3,30],
+    ["History","Mr. C. Mangwiro",3,30],
+    ["Principles of Accounts","Mrs. L. Sibanda",4,30],
+    ["Computer Science","Mr. W. Dube",3,60],
+    ["Physical Education","Mr. B. Chirwa",2,30],
+    ["Agriculture","Mrs. N. Chidziva",3,30]
+  ];
+  return list.map(function(row, idx){
+    return {
+      id: newId("s"),
+      name: row[0], teacher: row[1], frequency: row[2],
+      durationSlots: row[3]/30, durationMin: row[3],
+      color: SWATCHES[idx % SWATCHES.length]
+    };
+  });
+}
+
+/* =========================================================
+   TOASTS
+========================================================= */
+function toast(msg){
+  var wrap = document.getElementById("toastWrap");
+  var el = document.createElement("div");
+  el.className = "toast";
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(function(){
+    el.style.transition = "opacity .3s ease";
+    el.style.opacity = "0";
+    setTimeout(function(){ wrap.removeChild(el); }, 300);
+  }, 2600);
+}
+
+/* =========================================================
+   RENDER — SHELL
+========================================================= */
+var TABS = [
+  {id:"dashboard", label:"Dashboard"},
+  {id:"adddata", label:"Add Data"},
+  {id:"configure", label:"Configure Schedule"},
+  {id:"viewtimetable", label:"View Timetable"}
+];
+
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+  });
+}
+
+function renderNav(){
+  var nav = document.getElementById("navtabs");
+  nav.innerHTML = TABS.map(function(t){
+    return '<button class="navtab'+(state.activeTab===t.id?' active':'')+'" data-tab="'+t.id+'">'+t.label+'</button>';
+  }).join("");
+  Array.prototype.forEach.call(nav.querySelectorAll(".navtab"), function(btn){
+    btn.addEventListener("click", function(){
+      state.activeTab = btn.getAttribute("data-tab");
+      saveState();
+      render();
+    });
+  });
+}
+
+function levelPillRow(){
+  var html = '<div class="level-pill-row">';
+  CLASS_LEVELS.forEach(function(lvl){
+    var hasData = state.data[lvl].subjects.length>0 || state.data[lvl].timetable;
+    var cls = "level-pill" + (state.activeLevel===lvl?" active":"") + (hasData?" has-data":"");
+    html += '<button class="'+cls+'" data-level="'+esc(lvl)+'"><span class="dot"></span>'+lvl+'</button>';
+  });
+  html += '</div>';
+  return html;
+}
+function bindLevelPills(container){
+  Array.prototype.forEach.call(container.querySelectorAll(".level-pill"), function(btn){
+    btn.addEventListener("click", function(){
+      state.activeLevel = btn.getAttribute("data-level");
+      saveState();
+      render();
+    });
+  });
+}
+
+function render(){
+  renderNav();
+  var page = document.getElementById("page");
+  if(state.activeTab==="dashboard") page.innerHTML = renderDashboard();
+  else if(state.activeTab==="adddata") page.innerHTML = renderAddData();
+  else if(state.activeTab==="configure") page.innerHTML = renderConfigure();
+  else if(state.activeTab==="viewtimetable") page.innerHTML = renderViewTimetable();
+
+  applyTheme();
+  bindLevelPills(page);
+  bindGlobalActions(page);
+
+  if(state.activeTab==="adddata") bindAddDataEvents(page);
+  if(state.activeTab==="configure") bindConfigureEvents(page);
+  if(state.activeTab==="viewtimetable") bindViewTimetableEvents(page);
+  if(state.activeTab==="dashboard") bindDashboardEvents(page);
+}
+
+function bindGlobalActions(page){
+  Array.prototype.forEach.call(page.querySelectorAll("[data-goto]"), function(btn){
+    btn.addEventListener("click", function(){
+      state.activeTab = btn.getAttribute("data-goto");
+      var lvl = btn.getAttribute("data-goto-level");
+      if(lvl) state.activeLevel = lvl;
+      saveState();
+      render();
+    });
+  });
+  Array.prototype.forEach.call(page.querySelectorAll("[data-sample]"), function(btn){
+    btn.addEventListener("click", function(){
+      loadSampleData();
+    });
+  });
+}
+
+function loadSampleData(){
+  state.activeLevel = "Form 4";
+  var cls = defaultClassData();
+  cls.subjects = sampleSubjects();
+  cls.freePeriods = 6;
+  cls.timetable = generateTimetable(cls.subjects, cls.freePeriods);
+  cls.unscheduled = cls.timetable.unscheduled;
+  state.data["Form 4"] = cls;
+  state.activeTab = "viewtimetable";
+  persistLevel("Form 4");
+  render();
+  toast("Sample Form 4 timetable generated");
+}
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
+function bindDashboardEvents(page){}
+
+function renderDashboard(){
+  var totalSubjects = 0, teacherSet = {}, classesWithData = 0, classesWithTimetable = 0;
+  CLASS_LEVELS.forEach(function(lvl){
+    var c = state.data[lvl];
+    totalSubjects += c.subjects.length;
+    if(c.subjects.length>0) classesWithData++;
+    if(c.timetable) classesWithTimetable++;
+    c.subjects.forEach(function(s){ if(s.teacher) teacherSet[s.teacher.trim().toLowerCase()] = true; });
+  });
+  var teacherCount = Object.keys(teacherSet).length;
+
+  var rows = CLASS_LEVELS.map(function(lvl){
+    var c = state.data[lvl];
+    var used = usedSlots(c.subjects, c.freePeriods);
+    var cap = totalWeeklyCapacity();
+    var pct = cap ? Math.min(100, Math.round(used/cap*100)) : 0;
+    var status = c.timetable ? '<span class="badge badge-gold">Generated</span>' : (c.subjects.length ? '<span class="badge" style="background:var(--paper-dim);color:var(--ink-500);">Data added</span>' : '<span class="badge" style="background:var(--paper-dim);color:var(--ink-300);">Empty</span>');
+    return '<tr>'+
+      '<td style="font-weight:600;">'+lvl+'</td>'+
+      '<td>'+c.subjects.length+' subject'+(c.subjects.length===1?'':'s')+'</td>'+
+      '<td style="width:160px;"><div class="meter-track"><div class="meter-fill'+(used>cap?' over':'')+'" style="width:'+pct+'%"></div></div>'+
+        '<div style="font-size:11px;color:var(--ink-500);margin-top:3px;" class="mono">'+used+' / '+cap+' slots</div></td>'+
+      '<td>'+status+'</td>'+
+      '<td><button class="btn btn-ghost btn-sm" data-goto="adddata" data-goto-level="'+esc(lvl)+'">Open</button></td>'+
+    '</tr>';
+  }).join("");
+
+  return ''+
+  '<div class="page-head">'+
+    '<div><p class="eyebrow">Overview</p><h1>Dashboard</h1>'+
+    '<p>A running tally of every Form&rsquo;s subjects, teachers and generated timetables across the week.</p></div>'+
+    '<div style="display:flex; gap:10px;">'+
+      '<button class="btn btn-ghost" data-sample="1">Generate Sample Timetable</button>'+
+      '<button class="btn btn-primary" data-goto="adddata">Add Subject Data</button>'+
+    '</div>'+
+  '</div>'+
+
+  '<div class="stat-grid">'+
+    '<div class="stat-card"><div class="stat-num">'+totalSubjects+'</div><div class="stat-label">Subjects across all Forms</div></div>'+
+    '<div class="stat-card"><div class="stat-num">'+teacherCount+'</div><div class="stat-label">Teachers assigned</div></div>'+
+    '<div class="stat-card"><div class="stat-num">'+classesWithTimetable+' / 6</div><div class="stat-label">Timetables generated</div></div>'+
+    '<div class="stat-card"><div class="stat-num">'+totalWeeklyCapacity()+'</div><div class="stat-label">Lesson slots available / week</div></div>'+
+  '</div>'+
+
+  '<div class="card">'+
+    '<div class="card-head"><div><h3>Class levels</h3><p>Capacity used out of the '+totalWeeklyCapacity()+' weekly lesson slots fixed by the school day.</p></div></div>'+
+    '<div class="table-wrap"><table class="data-table">'+
+      '<thead><tr><th>Form</th><th>Subjects</th><th>Weekly load</th><th>Status</th><th></th></tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table></div>'+
+  '</div>';
+}
+
+/* =========================================================
+   ADD DATA
+========================================================= */
+function bindAddDataEvents(page){
+  var form = page.querySelector("#subjectForm");
+  form.addEventListener("submit", function(ev){
+    ev.preventDefault();
+    var name = page.querySelector("#f_name").value.trim();
+    var teacher = page.querySelector("#f_teacher").value.trim();
+    var freq = parseInt(page.querySelector("#f_freq").value, 10);
+    var dur = parseInt(page.querySelector("#f_duration").value, 10);
+    var editId = form.getAttribute("data-edit-id");
+
+    if(!name || !teacher || !freq || freq<1 || !dur){
+      toast("Please fill in subject, teacher and frequency.");
+      return;
+    }
+    var cls = curClass();
+    if(editId){
+      var existing = cls.subjects.filter(function(s){ return s.id===editId; })[0];
+      if(existing){
+        existing.name = name; existing.teacher = teacher; existing.frequency = freq;
+        existing.durationMin = dur; existing.durationSlots = dur/30;
+      }
+      toast("Subject updated");
+    } else {
+      cls.subjects.push({
+        id: newId("s"),
+        name: name, teacher: teacher, frequency: freq,
+        durationMin: dur, durationSlots: dur/30,
+        color: SWATCHES[cls.subjects.length % SWATCHES.length]
+      });
+      toast("Subject added to "+state.activeLevel);
+    }
+    cls.timetable = null; // data changed — invalidate previous generation
+    persistLevel(state.activeLevel);
+    render();
+  });
+
+  Array.prototype.forEach.call(page.querySelectorAll("[data-edit]"), function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-edit");
+      var subj = curClass().subjects.filter(function(s){ return s.id===id; })[0];
+      if(!subj) return;
+      page.querySelector("#f_name").value = subj.name;
+      page.querySelector("#f_teacher").value = subj.teacher;
+      page.querySelector("#f_freq").value = subj.frequency;
+      page.querySelector("#f_duration").value = subj.durationMin;
+      form.setAttribute("data-edit-id", id);
+      page.querySelector("#formTitle").textContent = "Edit subject";
+      page.querySelector("#submitBtnLabel").textContent = "Save changes";
+      page.querySelector("#cancelEditBtn").style.display = "inline-flex";
+      page.querySelector("#f_name").focus();
+    });
+  });
+
+  var cancelBtn = page.querySelector("#cancelEditBtn");
+  if(cancelBtn) cancelBtn.addEventListener("click", function(){ resetSubjectForm(page); });
+
+  Array.prototype.forEach.call(page.querySelectorAll("[data-delete]"), function(btn){
+    btn.addEventListener("click", function(){
+      var id = btn.getAttribute("data-delete");
+      pendingDelete = { level: state.activeLevel, id: id };
+      showConfirmModal("Remove this subject?", "This will delete it from "+state.activeLevel+"'s subject list and clear any generated timetable for this Form.", function(){
+        var cls = state.data[pendingDelete.level];
+        cls.subjects = cls.subjects.filter(function(s){ return s.id !== pendingDelete.id; });
+        cls.timetable = null;
+        persistLevel(pendingDelete.level);
+        render();
+        toast("Subject removed");
+      });
+    });
+  });
+}
+
+var pendingDelete = null;
+
+function resetSubjectForm(page){
+  var form = page.querySelector("#subjectForm");
+  form.removeAttribute("data-edit-id");
+  form.reset();
+  page.querySelector("#formTitle").textContent = "Add a subject";
+  page.querySelector("#submitBtnLabel").textContent = "Add subject";
+  page.querySelector("#cancelEditBtn").style.display = "none";
+}
+
+function renderAddData(){
+  var cls = curClass();
+  var rows = cls.subjects.length ? cls.subjects.map(function(s, idx){
+    return '<tr>'+
+      '<td><span class="subj-swatch" style="background:'+s.color+'"></span>'+esc(s.name)+'</td>'+
+      '<td>'+esc(s.teacher)+'</td>'+
+      '<td>'+s.frequency+'&times; / week</td>'+
+      '<td>'+s.durationMin+' min</td>'+
+      '<td><div class="row-actions">'+
+        '<button class="icon-btn" data-edit="'+s.id+'" title="Edit">&#9998;</button>'+
+        '<button class="icon-btn" data-delete="'+s.id+'" title="Delete">&#128465;</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join("") : '';
+
+  var used = usedSlots(cls.subjects, cls.freePeriods);
+  var cap = totalWeeklyCapacity();
+
+  return ''+
+  '<div class="page-head">'+
+    '<div><p class="eyebrow">Subjects &amp; Teachers</p><h1>Add Data</h1>'+
+    '<p>Enter each subject with its dedicated teacher, weekly frequency and lesson duration for the selected Form.</p></div>'+
+  '</div>'+
+
+  levelPillRow()+
+
+  '<div class="two-col">'+
+    '<div class="card">'+
+      '<div class="card-head"><div><h3>'+esc(state.activeLevel)+' subject list</h3>'+
+        '<p>'+cls.subjects.length+' subject'+(cls.subjects.length===1?'':'s')+' &middot; '+used+' of '+cap+' weekly slots used</p></div></div>'+
+      (cls.subjects.length ? '<div class="table-wrap"><table class="data-table">'+
+        '<thead><tr><th>Subject</th><th>Teacher</th><th>Frequency</th><th>Duration</th><th></th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div>' :
+        '<div class="empty"><div class="icon">&#128218;</div><h4>No subjects yet</h4>'+
+        '<p>Use the form to add the first subject for '+esc(state.activeLevel)+', or load sample data to explore the app.</p>'+
+        '<button class="btn btn-ghost btn-sm" data-sample="1">Generate Sample Timetable</button></div>')+
+    '</div>'+
+
+    '<div class="card card-pad">'+
+      '<h3 id="formTitle" style="margin:0 0 4px;font-size:16px;">Add a subject</h3>'+
+      '<p style="margin:0 0 18px;font-size:12.5px;color:var(--ink-500);">Applies to '+esc(state.activeLevel)+' only.</p>'+
+      '<form id="subjectForm">'+
+        '<div class="field"><label for="f_name">Subject name</label>'+
+          '<input type="text" id="f_name" placeholder="e.g. Mathematics" autocomplete="off"></div>'+
+        '<div class="field"><label for="f_teacher">Teacher</label>'+
+          '<input type="text" id="f_teacher" placeholder="e.g. Mrs. R. Chikwava" autocomplete="off"></div>'+
+        '<div class="form-row">'+
+          '<div class="field"><label for="f_freq">Lessons per week</label>'+
+            '<input type="number" id="f_freq" min="1" max="14" value="3"></div>'+
+          '<div class="field"><label for="f_duration">Lesson duration</label>'+
+            '<select id="f_duration">'+
+              '<option value="30">30 minutes</option>'+
+              '<option value="60">60 minutes (double)</option>'+
+              '<option value="90">90 minutes (triple)</option>'+
+              '<option value="120">120 minutes</option>'+
+            '</select></div>'+
+        '</div>'+
+        '<div style="display:flex; gap:10px; margin-top:6px;">'+
+          '<button type="submit" class="btn btn-primary" style="flex:1;"><span id="submitBtnLabel">Add subject</span></button>'+
+          '<button type="button" id="cancelEditBtn" class="btn btn-ghost" style="display:none;">Cancel</button>'+
+        '</div>'+
+      '</form>'+
+    '</div>'+
+  '</div>';
+}
+
+/* =========================================================
+   CONFIGURE SCHEDULE
+========================================================= */
+function bindConfigureEvents(page){
+  var freeInput = page.querySelector("#freePeriodsInput");
+  freeInput.addEventListener("change", function(){
+    var val = parseInt(freeInput.value, 10);
+    if(isNaN(val) || val<0) val = 0;
+    curClass().freePeriods = val;
+    curClass().timetable = null;
+    persistLevel(state.activeLevel);
+    render();
+  });
+
+  var genBtn = page.querySelector("#generateBtn");
+  if(genBtn){
+    genBtn.addEventListener("click", function(){
+      var cls = curClass();
+      if(cls.subjects.length===0){
+        toast("Add at least one subject before generating.");
+        return;
+      }
+      cls.timetable = generateTimetable(cls.subjects, cls.freePeriods);
+      cls.unscheduled = cls.timetable.unscheduled;
+      persistLevel(state.activeLevel);
+      toast(state.activeLevel+" timetable generated");
+      state.activeTab = "viewtimetable";
+      render();
+    });
+  }
+
+  var clearBtn = page.querySelector("#clearLevelBtn");
+  if(clearBtn){
+    clearBtn.addEventListener("click", function(){
+      var lvl = state.activeLevel;
+      showConfirmModal("Clear all data for "+lvl+"?", "This removes every subject, the free period count and any generated timetable for this Form. This cannot be undone.", function(){
+        state.data[lvl] = defaultClassData();
+        persistLevel(lvl);
+        render();
+        toast(lvl+" data cleared");
+      });
+    });
+  }
+}
+
+function renderConfigure(){
+  var cls = curClass();
+  var used = usedSlots(cls.subjects, cls.freePeriods);
+  var cap = totalWeeklyCapacity();
+  var pct = cap ? Math.min(100, Math.round(used/cap*100)) : 0;
+  var over = used>cap;
+
+  var subjLines = cls.subjects.length ? cls.subjects.map(function(s){
+    return '<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px;">'+
+      '<span><span class="subj-swatch" style="background:'+s.color+'"></span>'+esc(s.name)+'</span>'+
+      '<span class="mono" style="color:var(--ink-500);">'+ (s.frequency*s.durationSlots) +' slots</span></div>';
+  }).join("") : '<p style="color:var(--ink-500);font-size:13px;">No subjects added for '+esc(state.activeLevel)+' yet.</p>';
+
+  return ''+
+  '<div class="page-head">'+
+    '<div><p class="eyebrow">Weekly Structure</p><h1>Configure Schedule</h1>'+
+    '<p>Set free periods and generate the auto-scheduled timetable for '+esc(state.activeLevel)+'. Days run Monday&ndash;Friday, break 10:00&ndash;10:30, lunch 13:00&ndash;14:00, with Wednesday and Friday afternoons reserved for sport.</p></div>'+
+    '<div style="display:flex; gap:10px;">'+
+      '<button class="btn btn-ghost" data-sample="1">Generate Sample Timetable</button>'+
+    '</div>'+
+  '</div>'+
+
+  levelPillRow()+
+
+  '<div class="two-col">'+
+    '<div class="card card-pad">'+
+      '<h3 style="margin:0 0 14px;font-size:16px;">Free periods</h3>'+
+      '<div class="field">'+
+        '<label for="freePeriodsInput">Number of free periods to distribute for '+esc(state.activeLevel)+'</label>'+
+        '<input type="number" id="freePeriodsInput" min="0" max="40" value="'+cls.freePeriods+'">'+
+        '<p class="hint">Free periods are spread as evenly as possible across Monday&ndash;Friday, one 30-minute slot at a time.</p>'+
+      '</div>'+
+
+      '<div style="margin-top:22px;">'+
+        '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-500);margin-bottom:6px;">'+
+          '<span>Weekly load</span><span class="mono">'+used+' / '+cap+' slots</span></div>'+
+        '<div class="meter-track"><div class="meter-fill'+(over?' over':'')+'" style="width:'+pct+'%"></div></div>'+
+        (over ? '<p style="color:var(--danger);font-size:12px;margin-top:8px;">This exceeds the '+cap+' lesson slots available in the week &mdash; some lessons may not be placed. Reduce frequency or duration.</p>' : '')+
+      '</div>'+
+
+      '<button id="generateBtn" class="btn btn-gold" style="margin-top:22px; width:100%; justify-content:center;">Generate Timetable for '+esc(state.activeLevel)+'</button>'+
+      (cls.timetable ? '<button class="btn btn-ghost" style="margin-top:10px;width:100%;justify-content:center;" data-goto="viewtimetable">View generated timetable &rarr;</button>' : '')+
+
+      '<div style="margin-top:26px; padding-top:18px; border-top:1px solid var(--line);">'+
+        '<button id="clearLevelBtn" class="btn btn-danger-ghost btn-sm">Clear all data for '+esc(state.activeLevel)+'</button>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="card card-pad">'+
+      '<h3 style="margin:0 0 4px;font-size:16px;">Subject load summary</h3>'+
+      '<p style="margin:0 0 14px;font-size:12.5px;color:var(--ink-500);">'+cls.subjects.length+' subject'+(cls.subjects.length===1?'':'s')+' configured for '+esc(state.activeLevel)+'</p>'+
+      subjLines+
+      '<div style="display:flex;justify-content:space-between;padding-top:12px;font-size:13px;font-weight:600;">'+
+        '<span>Free periods</span><span class="mono">'+cls.freePeriods+' slots</span></div>'+
+    '</div>'+
+  '</div>';
+}
+
+/* =========================================================
+   VIEW TIMETABLE
+========================================================= */
+function bindViewTimetableEvents(page){}
+
+function cellHtml(day, idx){
+  var def = DAY_DEFS[day];
+  if(def["break"].indexOf(idx)>=0){
+    return '<div class="cell-inner cell-break"><div class="cell-block-label">BREAK</div></div>';
+  }
+  if(def.lunch.indexOf(idx)>=0){
+    if(def.lunch[0]===idx){
+      return '<div class="cell-inner cell-lunch"><div class="cell-block-label">LUNCH</div></div>';
+    }
+    return '<div class="cell-inner cell-lunch"></div>';
+  }
+  if(def.sports.indexOf(idx)>=0){
+    if(def.sports[0]===idx){
+      return '<div class="cell-inner cell-sports"><div class="cell-block-label">SPORTS</div></div>';
+    }
+    return '<div class="cell-inner cell-sports"></div>';
+  }
+  return null; // lesson slot — handled by caller with grid data
+}
+
+function renderTimetableGrid(cls){
+  var grid = cls.timetable.grid;
+  var rowsHtml = "";
+  for(var i=0;i<SLOT_COUNT;i++){
+    rowsHtml += '<tr>';
+    rowsHtml += '<td class="time-cell">'+SLOTS[i].start+'&ndash;'+SLOTS[i].end+'</td>';
+    DAYS.forEach(function(day){
+      var fixed = cellHtml(day, i);
+      if(fixed!==null){
+        rowsHtml += '<td>'+fixed+'</td>';
+        return;
+      }
+      var cell = grid[day][i];
+      if(!cell){
+        rowsHtml += '<td><div class="cell-inner cell-lesson"></div></td>';
+      } else if(cell.kind==="free"){
+        rowsHtml += '<td><div class="cell-inner cell-free"><div class="free-label">Free</div></div></td>';
+      } else {
+        rowsHtml += '<td style="position:relative;"><div class="subj-left-bar" style="background:'+cell.color+'"></div>'+
+          '<div class="cell-inner cell-lesson" style="padding-left:11px;">'+
+          '<div class="subj-name">'+esc(cell.name)+'</div>'+
+          '<div class="teacher-name">'+esc(cell.teacher)+'</div>'+
+          '</div></td>';
+      }
+    });
+    rowsHtml += '</tr>';
+  }
+
+  var headCells = DAYS.map(function(d){ return '<th>'+d+'</th>'; }).join("");
+
+  return '<div class="tt-wrap"><table class="tt-grid">'+
+    '<thead><tr><th class="time-col">Time</th>'+headCells+'</tr></thead>'+
+    '<tbody>'+rowsHtml+'</tbody>'+
+  '</table></div>';
+}
+
+function renderViewTimetable(){
+  var cls = curClass();
+
+  var body;
+  if(!cls.timetable){
+    body = '<div class="card"><div class="empty">'+
+      '<div class="icon">&#128197;</div>'+
+      '<h4>No timetable generated for '+esc(state.activeLevel)+'</h4>'+
+      '<p>Add subjects and configure free periods, then generate the timetable to see it here.</p>'+
+      '<div style="display:flex; gap:10px; justify-content:center;">'+
+        '<button class="btn btn-primary btn-sm" data-goto="adddata">Add subjects</button>'+
+        '<button class="btn btn-ghost btn-sm" data-sample="1">Load sample data</button>'+
+      '</div>'+
+    '</div></div>';
+  } else {
+    var unscheduled = cls.unscheduled || [];
+    var warn = "";
+    if(unscheduled.length){
+      var items = unscheduled.map(function(u){
+        return u.isFree ? (u.count+' free period slot'+(u.count===1?'':'s')) : (esc(u.subject)+' ('+ (u.size*30) +' min occurrence)');
+      }).join(", ");
+      warn = '<div class="warn-box"><span>&#9888;</span><div><strong>Could not fit everything:</strong> '+items+'. The week is full &mdash; reduce frequency, duration or free periods and regenerate.</div></div>';
+    }
+
+    body = '<div class="card card-pad" style="margin-bottom:18px;">'+
+      '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;align-items:center;">'+
+        '<div><h3 style="margin:0 0 3px;font-size:16px;">'+esc(state.activeLevel)+' &mdash; Weekly Timetable</h3>'+
+        '<p style="margin:0;font-size:12.5px;color:var(--ink-500);">Generated from '+cls.subjects.length+' subjects and '+cls.freePeriods+' free periods.</p></div>'+
+        '<button class="btn btn-ghost btn-sm" data-goto="configure">Regenerate &#8635;</button>'+
+      '</div>'+
+    '</div>'+
+    warn+
+    '<div class="card card-pad">'+
+      renderTimetableGrid(cls)+
+      '<div class="legend">'+
+        '<div class="legend-item"><span class="legend-swatch" style="background:var(--break-bg);"></span>Break (10:00&ndash;10:30)</div>'+
+        '<div class="legend-item"><span class="legend-swatch" style="background:var(--lunch-bg);"></span>Lunch (13:00&ndash;14:00)</div>'+
+        '<div class="legend-item"><span class="legend-swatch" style="background:var(--sports-bg);"></span>Sports (Wed &amp; Fri afternoons)</div>'+
+        '<div class="legend-item"><span class="legend-swatch" style="background:var(--paper-dim);border:1px solid var(--line);"></span>Free period</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  return ''+
+  '<div class="page-head">'+
+    '<div><p class="eyebrow">Weekly Grid</p><h1>View Timetable</h1>'+
+    '<p>Monday to Friday, in fixed 30-minute intervals from 07:30 to 16:00.</p></div>'+
+  '</div>'+
+  levelPillRow()+
+  body;
+}
+
+/* =========================================================
+   CONFIRM MODAL
+========================================================= */
+function showConfirmModal(title, body, onConfirm){
+  var overlay = document.createElement("div");
+  overlay.className = "modal-overlay";
+  overlay.innerHTML =
+    '<div class="modal">'+
+      '<div class="modal-head"><h3>'+esc(title)+'</h3></div>'+
+      '<div class="modal-body"><p style="margin:0;font-size:13.5px;color:var(--ink-700);line-height:1.5;">'+esc(body)+'</p></div>'+
+      '<div class="modal-foot">'+
+        '<button class="btn btn-ghost btn-sm" id="modalCancel">Cancel</button>'+
+        '<button class="btn btn-primary btn-sm" style="background:var(--danger);" id="modalConfirm">Confirm</button>'+
+      '</div>'+
+    '</div>';
+  document.body.appendChild(overlay);
+  function close(){ document.body.removeChild(overlay); }
+  overlay.addEventListener("click", function(e){ if(e.target===overlay) close(); });
+  overlay.querySelector("#modalCancel").addEventListener("click", close);
+  overlay.querySelector("#modalConfirm").addEventListener("click", function(){ close(); onConfirm(); });
+}
+
+/* =========================================================
+   THEME
+========================================================= */
+function applyTheme(){
+  if(state.theme==="dark"){ document.documentElement.setAttribute("data-theme","dark"); }
+  else if(state.theme==="light"){ document.documentElement.setAttribute("data-theme","light"); }
+  else { document.documentElement.removeAttribute("data-theme"); }
+}
+document.getElementById("themeToggle").addEventListener("click", function(){
+  state.theme = (state.theme==="dark") ? "light" : (state.theme==="light" ? "auto" : "dark");
+  saveState();
+  applyTheme();
+  toast("Theme: "+state.theme);
+});
+
+/* =========================================================
+   INIT
+========================================================= */
+render();
+initCloudRecords();
+
+})();
+</script>
+</body>
+</html>
